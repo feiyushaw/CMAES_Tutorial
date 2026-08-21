@@ -18,7 +18,8 @@ NOTEBOOKS = [
     "cmaes_practical_guide.ipynb",
 ]
 
-JP_RE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]")
+JP_RE = re.compile(r"[\u3040-\u30ff]")
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 # Protect material that machine translation must not rewrite.
 PROTECTED_RE = re.compile(
     r"(\$\$.*?\$\$|\$[^\n$]+?\$|`[^`]+`|https?://[^\s)）>]+|\\begin\{.*?\\end\{[^}]+\})",
@@ -31,10 +32,12 @@ cache = {}
 
 def protect(text):
     items = []
+
     def repl(m):
         token = f"ZXQPH{len(items)}QXZ"
         items.append(m.group(0))
         return token
+
     return PROTECTED_RE.sub(repl, text), items
 
 
@@ -46,12 +49,14 @@ def restore(text, items):
 
 
 def translate_text(text):
+    # Hiragana / katakana are reliable indicators that the text is still Japanese.
+    # Kanji alone cannot distinguish Japanese from translated Chinese, so it is not
+    # used as the translation trigger or the final residual check.
     if not text.strip() or not JP_RE.search(text):
         return text
     if text in cache:
         return cache[text]
     safe, items = protect(text)
-    # Google Translate has request-size limits; translate paragraph-sized chunks.
     chunks = re.split(r"(\n\s*\n)", safe)
     out = []
     for chunk in chunks:
@@ -63,7 +68,6 @@ def translate_text(text):
             out.append(translated if translated else chunk)
             time.sleep(0.08)
         except Exception:
-            # Retry once, then keep source so the verification step can flag it.
             time.sleep(1.0)
             try:
                 translated = translator.translate(chunk)
@@ -83,12 +87,10 @@ def translate_code_line(line):
         prefix, comment = line.split("#", 1)
         if JP_RE.search(comment):
             return prefix + "#" + translate_text(comment)
-    # Japanese text inside docstring/string-only lines is instructional text.
     stripped = line.strip()
     if stripped.startswith(('"""', "'''")) or stripped.endswith(('"""', "'''")):
         indent = line[: len(line) - len(line.lstrip())]
         return indent + translate_text(line[len(indent):])
-    # Common parameter-description lines inside multi-line docstrings.
     if not any(tok in line for tok in ["=", "(", ")", "[", "]", "return ", "def ", "class "]):
         indent = line[: len(line) - len(line.lstrip())]
         return indent + translate_text(line[len(indent):])
@@ -112,17 +114,28 @@ def process(path):
 def main():
     for name in NOTEBOOKS:
         process(Path(name))
+
     remaining = []
     for name in NOTEBOOKS:
         data = json.loads(Path(name).read_text(encoding="utf-8"))
         for i, cell in enumerate(data.get("cells", [])):
-            text = "".join(cell.get("source", [])) if isinstance(cell.get("source", []), list) else cell.get("source", "")
+            src = cell.get("source", [])
+            text = "".join(src) if isinstance(src, list) else src
             if JP_RE.search(text):
                 remaining.append(f"{name}: cell {i}")
-    Path("translation_report.txt").write_text(
-        "Remaining cells containing Japanese/CJK source after translation:\n" + "\n".join(remaining) + "\n",
-        encoding="utf-8",
-    )
+
+    report = [
+        "CMA-ES Tutorial Chinese localization report",
+        "============================================",
+        f"Notebooks processed: {len(NOTEBOOKS)}",
+        f"Cells still containing hiragana/katakana: {len(remaining)}",
+        "",
+    ]
+    report.extend(remaining)
+    Path("translation_report.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+
+    if remaining:
+        raise SystemExit("Japanese text remains; see translation_report.txt")
 
 
 if __name__ == "__main__":
