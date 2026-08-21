@@ -1,21 +1,46 @@
 # CMAES_Tutorial
 
-CMA-ESの学習用コンテンツ．
-利用者は多くいるにも関わらず，日本語での適切な説明資料および学習コンテンツが知る限り存在しないので，昔教育用に作成したノートブックをもとに作成．
-時間的余裕があるときに少しずつ更新していきます．
-1_から順に学ぶことを想定しています．
+CMA-ES（Covariance Matrix Adaptation Evolution Strategy，协方差矩阵自适应进化策略）学习教程。
 
-## CMA-ESを理解するために最低限読んでおいたほうが良い論文
-いずれも機関レポジトリやアーカイブなどでPDFを確認できます．
-- Nikolaus Hansen, Andreas Ostermeier; Completely Derandomized Self-Adaptation in Evolution Strategies. Evol Comput 2001; 9 (2): 159–195. doi: https://doi.org/10.1162/106365601750190398
-  - CMA-ESの原型．CSAによるステップサイズ更新とRank-one更新による共分散行列更新を用いたアルゴリズム
-- Nikolaus Hansen, Sibylle D. Müller, Petros Koumoutsakos; Reducing the Time Complexity of the Derandomized Evolution Strategy with Covariance Matrix Adaptation (CMA-ES). Evol Comput 2003; 11 (1): 1–18. doi: https://doi.org/10.1162/106365603321828970
-  - Rank-mu更新の導入．これにより，大きな集団サイズを効率的に活用できるようになった．
-- Hansen, N., Kern, S. (2004). Evaluating the CMA Evolution Strategy on Multimodal Test Functions. In: Yao, X., et al. Parallel Problem Solving from Nature - PPSN VIII. PPSN 2004. Lecture Notes in Computer Science, vol 3242. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-30217-9_29
-  - 多峰性関数での性能評価．集団サイズを大きくすることで最適解発見確率が高くなること，一部の問題では集団サイズの増加が効果的でないこと，を示した結果．なお，weighted-recombination（ランキング毎に異なる重みを与えるスキーム）もここで導入されているが，多峰性とは特に関係はなく，均等な重みよりも少しだけ効率的なのでその後はずっと使われている．
-- G. A. Jastrebski and D. V. Arnold, "Improving Evolution Strategies through Active Covariance Matrix Adaptation," 2006 IEEE International Conference on Evolutionary Computation, Vancouver, BC, Canada, 2006, pp. 2814-2821, doi: https://doi.org/10.1109/CEC.2006.1688662.
-  - 共分散行列の適応の際に負の重みを活用するActive更新の提案．これまでのCMA-ESでは相対的に大きな固有値を学習することが得意であったが，このActive更新によって相対的に小さな固有値の学習を効率化できる．共分散行列の正定値性の保証がなくなるが，十分に小さい学習率を用いている限りは実用上問題ない．
-- Ros, R., Hansen, N. (2008). A Simple Modification in CMA-ES Achieving Linear Time and Space Complexity. In: Rudolph, G., Jansen, T., Beume, N., Lucas, S., Poloni, C. (eds) Parallel Problem Solving from Nature – PPSN X. PPSN 2008. Lecture Notes in Computer Science, vol 5199. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-87700-4_30
-  - 共分散行列を対角行列に限定することで変数の数に対して線形の計算量を実現するSep-CMA-ESの提案．高次元最適化のための方法としても有用だが，それ以上に，1)共分散行列を制限すると一部の目的関数においてヘッセ行列の逆行列を近似できないため探索が非効率になるという点，2)逆に，一部の問題ではSeparability（変数毎にスケールが異なるにしても，変数間に依存関係がない構造）を活用することになり，共分散行列の学習が高速化され（学習率を高く設定できるため），学習時間が短縮される（収束の速さ自体はかわらない）という点を理解することが重要
-- Y. Akimoto, N. Hansen; Diagonal Acceleration for Covariance Matrix Adaptation Evolution Strategies. Evol Comput 2020; 28 (3): 405–435. doi: https://doi.org/10.1162/evco_a_00260
-  - Sep-CMA-ESと従来のCMA-ESのいいとこ取りをするdiagonal decodingの提案．Active更新における共分散行列の正定値性を保証する枠組みも提案．
+虽然 CMA-ES 的使用者很多，但系统、易读的中文学习资料仍然比较少。本仓库基于作者过去用于教学的 Jupyter Notebook 整理而成，并会在时间允许的情况下持续更新。
+
+建议按照编号顺序学习：`0_` → `1_` → `2_` → `3_` → `4_` → `5_` → `6_`。
+
+## 推荐学习顺序
+
+- `0_black_box_optimization.ipynb`：黑盒优化基础
+- `1_evolution_strategy.ipynb`：Evolution Strategy 基础
+- `2_step_size_adaptation.ipynb`：步长自适应
+- `3_covariance_matrix_adaptation.ipynb`：协方差矩阵自适应
+- `4_nonseparability.ipynb`：不可分问题与旋转不变性
+- `5_multimodality.ipynb`：多峰问题
+- `6_advanced_adaptation_mechanisms.ipynb`：高级自适应机制
+- `a1_minmax_optimization.ipynb`：Min-Max 优化扩展内容
+- `cmaes_acceleration.ipynb`：CMA-ES 加速相关内容
+- `cmaes_practical_guide.ipynb`：CMA-ES 实践指南
+
+## 理解 CMA-ES 建议至少阅读的论文
+
+以下论文均可通过机构仓储、作者主页或公开学术存档获取 PDF。
+
+- Nikolaus Hansen, Andreas Ostermeier; *Completely Derandomized Self-Adaptation in Evolution Strategies*. Evol Comput 2001; 9 (2): 159–195. doi: https://doi.org/10.1162/106365601750190398
+  - CMA-ES 的原型工作。提出了使用 CSA（Cumulative Step-size Adaptation，累积步长自适应）更新步长，并通过 rank-one 更新调整协方差矩阵的算法框架。
+
+- Nikolaus Hansen, Sibylle D. Müller, Petros Koumoutsakos; *Reducing the Time Complexity of the Derandomized Evolution Strategy with Covariance Matrix Adaptation (CMA-ES)*. Evol Comput 2003; 11 (1): 1–18. doi: https://doi.org/10.1162/106365603321828970
+  - 引入 rank-μ 更新，使算法能够更高效地利用较大的种群规模。
+
+- Hansen, N., Kern, S. (2004). *Evaluating the CMA Evolution Strategy on Multimodal Test Functions*. In: Yao, X., et al. Parallel Problem Solving from Nature - PPSN VIII. PPSN 2004. Lecture Notes in Computer Science, vol 3242. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-30217-9_29
+  - 研究 CMA-ES 在多峰函数上的性能。结果表明，增大种群规模通常能够提高发现全局最优解的概率，但对部分问题并不一定有效。该工作还引入了 weighted recombination，即根据排名对不同候选解赋予不同权重。它与多峰性本身没有直接关系，但通常比均匀权重略高效，因此后来被长期采用。
+
+- G. A. Jastrebski and D. V. Arnold, *Improving Evolution Strategies through Active Covariance Matrix Adaptation*, 2006 IEEE International Conference on Evolutionary Computation, Vancouver, BC, Canada, 2006, pp. 2814-2821, doi: https://doi.org/10.1109/CEC.2006.1688662.
+  - 提出 Active Covariance Matrix Adaptation，在协方差矩阵更新时利用负权重。传统 CMA-ES 更擅长学习较大的特征值，而 Active 更新能够提高较小特征值方向上的学习效率。该方法不再天然保证协方差矩阵始终正定，但在使用足够小的学习率时通常不会造成实际问题。
+
+- Ros, R., Hansen, N. (2008). *A Simple Modification in CMA-ES Achieving Linear Time and Space Complexity*. In: Rudolph, G., Jansen, T., Beume, N., Lucas, S., Poloni, C. (eds) Parallel Problem Solving from Nature – PPSN X. PPSN 2008. Lecture Notes in Computer Science, vol 5199. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-540-87700-4_30
+  - 提出 Sep-CMA-ES，将协方差矩阵限制为对角矩阵，从而使计算和存储复杂度相对于变量维数达到线性规模。除了高维优化本身，这篇论文还有两个重要启示：第一，限制协方差结构后，算法在某些目标函数上无法近似 Hessian 的逆矩阵，因此搜索效率会下降；第二，对于可分问题（即变量之间不存在依赖关系，只存在尺度差异），对角结构反而能够更充分地利用问题结构，使协方差学习更快，并允许使用更大的学习率，从而缩短学习所需时间。
+
+- Y. Akimoto, N. Hansen; *Diagonal Acceleration for Covariance Matrix Adaptation Evolution Strategies*. Evol Comput 2020; 28 (3): 405–435. doi: https://doi.org/10.1162/evco_a_00260
+  - 提出 diagonal decoding，在传统 CMA-ES 与 Sep-CMA-ES 之间取得折中，并给出了在 Active 更新中保证协方差矩阵正定性的框架。
+
+## 中文版说明
+
+本分支/版本的目标是将仓库中的教学说明完整中文化，包括 Notebook 的 Markdown 单元、教学性 docstring 与代码注释，同时保持公式、算法逻辑、变量名和实验设置不变，便于中文读者直接学习和运行原教程。
