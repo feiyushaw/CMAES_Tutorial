@@ -1,0 +1,45 @@
+name: Localize notebooks to Chinese
+
+on:
+  push:
+    branches: [docs/chinese-localization]
+    paths:
+      - 'tools/translate_notebooks_zh.py'
+      - '.github/workflows/localize-notebooks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  localize:
+    if: ${{ !contains(github.event.head_commit.message, '[zh-localized]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/chinese-localization
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install deep-translator
+      - name: Translate notebook instructional text
+        run: python tools/translate_notebooks_zh.py
+      - name: Validate notebook JSON
+        run: |
+          python - <<'PY'
+          import json, glob
+          for f in glob.glob('*.ipynb'):
+              with open(f, encoding='utf-8') as h:
+                  json.load(h)
+              print('OK', f)
+          PY
+      - name: Commit localized notebooks
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.ipynb' translation_report.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'docs: translate all notebook explanations to Chinese [zh-localized]'
+            git push origin HEAD:docs/chinese-localization
+          fi
